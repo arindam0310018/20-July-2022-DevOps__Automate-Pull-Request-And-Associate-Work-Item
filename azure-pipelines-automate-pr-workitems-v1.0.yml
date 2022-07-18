@@ -1,0 +1,262 @@
+#####################################################
+# TRIGGER CONDITION CAN BE ALTERED LIKE BELOW :-
+#####################################################
+# trigger:
+#   branches:
+#     include:
+#     - feature/*
+#   paths:
+#     include:
+#     - Automate-PR-and-Associate-WorkItems/*
+#####################################################
+
+
+#######################
+# TRIGGER CONDITION :-
+#######################
+trigger: none
+
+########################################################################
+#DECLARE VARIABLES:-
+# ONLY VARIABLE VALUES NEEDS TO BE ALTERED TO MAKE THE PIPELINE WORK.
+########################################################################
+variables:
+  PlanFilename: tfplan
+  TfvarFilename: usrmid.tfvars
+  KV-Name: ampockv
+  ServiceConnection: amcloud-cicd-service-connection
+  ResourceGroup: tfpipeline-rg
+  StorageAccount: tfpipelinesa
+  Container: terraform
+  TfstateFile: PR/createprworkitem.tfstate
+  BuildAgent: ubuntu-latest
+  PipelineEnv: NonProd
+  Terraform_Version: 1.2.3
+  WorkingDir: $(System.DefaultWorkingDirectory)/Automate-PR-and-Associate-WorkItems
+  Target: $(build.artifactstagingdirectory)/AMTF
+  Artifact: AM
+  anyTfChanges: false
+  DevOpsOrganisation: https://dev.azure.com/ArindamMitra0251
+  DevOpsProjName: AMCLOUD
+  DevOpsRepoName: PR
+  DevOpsDestinationBranch: main
+  
+######################
+#DECLARE BUILD AGENT:-
+######################
+pool:
+  vmImage: $(BuildAgent)
+
+###################
+#DECLARE STAGES:-
+###################
+
+#################
+# STAGE: BUILD
+#################
+
+stages:
+
+- stage: BUILD
+  jobs:
+  - job: BUILD
+    displayName: BUILD
+    steps:
+# Install Terraform Installer in the Build Agent:-
+    - task: ms-devlabs.custom-terraform-tasks.custom-terraform-installer-task.TerraformInstaller@0
+      displayName: INSTALL LATEST TERRAFORM VERSION
+      inputs:
+        terraformVersion: '$(Terraform_Version)'
+# Terraform Init:-
+    - task: TerraformTaskV2@2
+      displayName: TERRAFORM INIT
+      inputs:
+        command: 'init'
+        provider: 'azurerm'
+        workingDirectory: '$(WorkingDir)'
+        backendServiceArm: '$(ServiceConnection)' 
+        backendAzureRmResourceGroupName: '$(ResourceGroup)' 
+        backendAzureRmStorageAccountName: '$(StorageAccount)'
+        backendAzureRmContainerName: '$(Container)'
+        backendAzureRmKey: '$(TfstateFile)'
+# Terraform Validate:-
+    - task: TerraformTaskV2@2
+      displayName: TERRAFORM VALIDATE
+      inputs:
+        command: 'validate'
+        provider: 'azurerm'
+        workingDirectory: '$(WorkingDir)'
+        environmentServiceNameAzureRM: '$(ServiceConnection)'
+# Terraform Plan:-
+    - task: TerraformTaskV2@2
+      displayName: TERRAFORM PLAN
+      inputs:
+        command: 'plan'
+        provider: 'azurerm'
+        workingDirectory: '$(WorkingDir)'
+        commandOptions: '--var-file=$(TfvarFilename) --out=$(PlanFilename)'
+        environmentServiceNameAzureRM: '$(ServiceConnection)'
+# Detect Terraform Changes:-
+    - task: PowerShell@2
+      name: DetectTFChanges
+      displayName: DETECT TERRAFORM CHANGES
+      inputs:
+        workingDirectory: '$(workingDir)'
+        targetType: 'inline'
+        script: |
+          Write-Host "#######################################################"
+          Write-Host "Intial value of variable: $(anyTfChanges)"
+          Write-Host "#######################################################"
+          $plan = $(terraform show -json tfplan | ConvertFrom-Json)
+          $count = $plan.resource_changes.change.actions.length
+          $actions = ($plan.resource_changes | where { 'no-op' -notcontains $_.change.actions }).length -ne 0
+          Write-Host "##vso[task.setvariable variable=anyTfChanges;isOutput=true]$actions"
+          Write-Host "#######################################################"
+          Write-Host "Are there Changes in Infrastruture: $actions"
+          Write-Host "#######################################################"
+          Write-Host "TOTAL NO OF CHANGES: $count"
+          Write-Host "#######################################################"
+# Copy Files to Artifacts Staging Directory:-
+    - task: CopyFiles@2
+      displayName: COPY FILES ARTIFACTS STAGING DIRECTORY
+      inputs:
+        SourceFolder: '$(WorkingDir)'
+        Contents: |
+          **/*.tf
+          **/*.tfvars
+          **/*$(PlanFilename)*
+        TargetFolder: '$(Target)'
+# Publish Artifacts:-
+    - task: PublishBuildArtifacts@1
+      displayName: PUBLISH ARTIFACTS
+      inputs:
+        targetPath: '$(Target)'
+        artifactName: '$(Artifact)'
+
+#################
+# STAGE: DEPLOY
+#################
+
+- stage: DEPLOY
+  condition: |
+     and(succeeded(),
+       ne(variables['Build.SourceBranch'], 'refs/heads/main'),
+       eq(dependencies.BUILD.outputs['build.DetectTFChanges.anyTfChanges'], 'true')
+     )
+  jobs:
+  - deployment: 
+    displayName: Deploy
+    environment: '$(PipelineEnv)'
+    pool:
+      vmImage: '$(BuildAgent)'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+# Download Artifacts:-
+          - task: DownloadBuildArtifacts@0
+            displayName: DOWNLOAD ARTIFACTS
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: '$(Artifact)'
+              downloadPath: '$(System.ArtifactsDirectory)' 
+# Install Terraform Installer in the Build Agent:-
+          - task: ms-devlabs.custom-terraform-tasks.custom-terraform-installer-task.TerraformInstaller@0
+            displayName: INSTALL LATEST TERRAFORM VERSION
+            inputs:
+              terraformVersion: '$(Terraform_Version)'
+# Terraform Init:-
+          - task: TerraformTaskV2@2
+            displayName: TERRAFORM INIT
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.ArtifactsDirectory)/$(Artifact)/AMTF/'
+              backendServiceArm: '$(ServiceConnection)' 
+              backendAzureRmResourceGroupName: '$(ResourceGroup)' 
+              backendAzureRmStorageAccountName: '$(StorageAccount)'
+              backendAzureRmContainerName: '$(Container)'
+              backendAzureRmKey: '$(TfstateFile)'
+# Terraform Apply:-
+          - task: TerraformTaskV2@2
+            displayName: TERRAFORM APPLY
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(System.ArtifactsDirectory)/$(Artifact)/AMTF'
+              commandOptions: '--var-file=$(TfvarFilename)'
+              environmentServiceNameAzureRM: '$(ServiceConnection)'
+
+##################################################################################################
+# STAGE: CREATE PR
+# CREATE AND COMPLETE PULL REQUEST BY ASSOCIATING WORKITEMS AND DELETING SOURCE BRANCH
+#################################################################################################
+
+- stage: PULL_REQUEST_ASSOCIATE_WORKITEMS
+  condition: |
+     and(succeeded(), 
+       ne(variables['Build.SourceBranch'], 'refs/heads/main') 
+     )
+  dependsOn: DEPLOY
+  jobs:
+  - job: PULL_REQUEST_WORKITEMS
+    displayName: CREATE PR | ASSOCIATE WORKITEMS | COMPLETE
+    steps:
+# Download Keyvault Secrets:-
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: '$(ServiceConnection)'
+        KeyVaultName: '$(KV-Name)'
+        SecretsFilter: '*'
+        RunAsPreJob: false
+# Install Az DevOps CLI Extension in the Build Agent:-
+    - task: AzureCLI@1
+      displayName: INSTALL DEVOPS CLI EXTENSION
+      inputs:
+        azureSubscription: '$(ServiceConnection)'
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          az extension add --name azure-devops
+          az extension show --name azure-devops --output table
+# Validate Az DevOps CLI Extension in the Build Agent:-
+    - task: PowerShell@2
+      displayName: VALIDATE AZ DEVOPS CLI
+      inputs:
+        targetType: 'inline'
+        script: |
+          az devops -h
+# Set Default DevOps Organization and Project:-
+    - task: PowerShell@2
+      displayName: DEVOPS LOGIN + SET DEFAULT DEVOPS ORG & PROJECT
+      inputs:
+        targetType: 'inline'
+        script: |
+         echo "$(PAT)" | az devops login  
+         az devops configure --defaults organization=$(DevOpsOrganisation) project=$(DevOpsProjName)
+# Create Workitem + Create PR + Associate Workitem with PR + Complete the PR + Delete Source Branch:-
+    - task: PowerShell@2
+      displayName: CREATE & COMPLETE PULL REQUEST + WORKITEMS + DELETE SOURCE BRANCH
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "#######################################################"
+          Write-Host "NAME OF THE SOURCE BRANCH: $(Build.SourceBranchName)"
+          Write-Host "#######################################################"
+          $i="PR-"
+          $j=Get-Random -Maximum 1000
+          Write-Host "###################################################"
+          Write-Host "WORKITEM NUMBER GENERATED IN DEVOPS BOARD: $i$j"
+          Write-Host "###################################################"
+          $wid = az boards work-item create --title $i$j --type "Issue" --query "id"
+          Write-Host "#######################################################" 
+          Write-Host "WORKITEM ID is: $wid"
+          Write-Host "#######################################################"
+          $prid = az repos pr create --repository $(DevOpsRepoName) --source-branch $(Build.SourceBranchName) --target-branch $(DevOpsDestinationBranch) --work-items $wid --transition-work-items true --query "pullRequestId"
+          Write-Host "#######################################################"
+          Write-Host "PULL REQUEST ID is: $prid"
+          Write-Host "#######################################################"
+          Write-Host "##### TO BE MERGED FROM $(Build.SourceBranchName) TO Main #####"
+          az repos pr update --id $prid --auto-complete true --squash true --status completed --delete-source-branch true
+          Write-Host "##### MERGE SUCCESSFULL #####"
