@@ -4,6 +4,14 @@ Greetings my fellow Technology Advocates and Specialists.
 
 In this Session, I will demonstrate how to Automate Pull Request (PR) and Associate Work-Items Using Azure DevOps.
 
+| __IN-PERSON SESSION:-__ |
+| --------- |
+| I presented this Demo as a part of __AZURE DEVOPS: TAKEAWAYS BEST PRACTISES AND LIVE DEMOS__ In-Person Speaker Session in __MICROSOFT AZURE BERN USER GROUP__ Forum/Platform. |
+| __Event Meetup Announcement:-__ |
+| ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/cpz6voitr8v43psbgsii.jpg) |
+| __Moment Captured with Founders of MICROSOFT AZURE BERN USER GROUP "STEFAN JOHNER", "STEFAN ROTH", "PAUL AFFENTRANGER" and Co-organizer "DAMIEN BOWDEN":-__ |
+| ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/jxz1bp0dw976e7s3j3c0.JPG) |
+
 | __AUTOMATION OBJECTIVE:-__ |
 | --------- |
 | Create Random Generated Work-Items in Azure DevOps Boards. |
