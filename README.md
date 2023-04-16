@@ -25,7 +25,7 @@ I had the Privilege to talk on this topic in __TWO__ Azure Communities:-
 | ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/xve54ff8gdkj8fm6ecy5.JPG) |
 | __LIVE DEMO__ was Recorded as part of my Presentation in __MICROSOFT AZURE PAKISTAN COMMUNITY__ Forum/Platform |
 | Duration of My Demo = __48 Mins 23 Secs__ |
-| {% youtube acyE2gWiLdI&t=1853s %} |
+| [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/acyE2gWiLdI&t=1853s/0.jpg)](https://www.youtube.com/watch?v=acyE2gWiLdI&t=1853s) |  
 
 | __AUTOMATION OBJECTIVE:-__ |
 | --------- |
