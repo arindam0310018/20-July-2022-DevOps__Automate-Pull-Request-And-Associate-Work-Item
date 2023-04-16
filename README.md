@@ -4,6 +4,13 @@ Greetings my fellow Technology Advocates and Specialists.
 
 In this Session, I will demonstrate how to Automate Pull Request (PR) and Associate Work-Items Using Azure DevOps.
 
+I had the Privilege to talk on this topic in __TWO__ Azure Communities:-
+
+| __NAME OF THE AZURE COMMUNITY__ | __TYPE OF SPEAKER SESSION__ |
+| --------- | --------- |
+| __Microsoft Azure Bern User Group__ | __In-Person__ |
+| __Microsoft Azure Pakistan Community__ | __Virtual__ |
+
 | __IN-PERSON SESSION:-__ |
 | --------- |
 | I presented this Demo as a part of __AZURE DEVOPS: TAKEAWAYS BEST PRACTISES AND LIVE DEMOS__ In-Person Speaker Session in __MICROSOFT AZURE BERN USER GROUP__ Forum/Platform. |
@@ -11,6 +18,14 @@ In this Session, I will demonstrate how to Automate Pull Request (PR) and Associ
 | ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/cpz6voitr8v43psbgsii.jpg) |
 | __Moment Captured with Founders of MICROSOFT AZURE BERN USER GROUP "STEFAN JOHNER", "STEFAN ROTH", "PAUL AFFENTRANGER" and Co-organizer "DAMIEN BOWDEN":-__ |
 | ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/jxz1bp0dw976e7s3j3c0.JPG) |
+
+| __VIRTUAL SESSION:-__ |
+| --------- |
+| __Event Meetup Announcement:-__ |
+| ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/xve54ff8gdkj8fm6ecy5.JPG) |
+| __LIVE DEMO__ was Recorded as part of my Presentation in __MICROSOFT AZURE PAKISTAN COMMUNITY__ Forum/Platform |
+| Duration of My Demo = __48 Mins 23 Secs__ |
+| {% youtube acyE2gWiLdI&t=1853s %} |
 
 | __AUTOMATION OBJECTIVE:-__ |
 | --------- |
